@@ -13,35 +13,17 @@ function dotProduct(v1, v2) {
     return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
 }
 
-function multiplyMatrices(a, b) {
-    if (!Array.isArray(a) || !Array.isArray(b) || !a.length || !b.length || !a[0].length || !b[0].length) {
-       // console.error('Need non-empty 2-dimensional arrays for matrix multiplication.');
-       return [];
-    }
-    const x = a.length;
-    const z = a[0].length;
-    const y = b[0].length;
-    if (b.length !== z) {
-       // console.error('Number of columns in the first matrix must match number of rows in the second.');
-       return [];
-    }
-
-    const product = Array(x).fill(0).map(() => Array(y).fill(0));
-
-    for (let i = 0; i < x; i++) {
-       for (let j = 0; j < y; j++) {
-          for (let k = 0; k < z; k++) {
-             product[i][j] += a[i][k] * b[k][j];
-          }
-       }
-    }
-    return product;
+function getVectorMagnitude(vector) {
+    const magnitude = Math.sqrt(vector.reduce((sum, component) => sum + component ** 2, 0));
+    return magnitude;
 }
 
-function normalizeVector(v) {
-    const magnitude = Math.sqrt(v.reduce((sum, val) => sum + val * val, 0));
+
+function normalizeVector(vector) {
+    // const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
+    const magnitude = getVectorMagnitude(vector);
     if (magnitude === 0) return [0, 0, 0];
-    return v.map(val => val / magnitude);
+    return vector.map(component => component / magnitude);
 }
 
 // Function to calculate inverse of a 3x3 matrix
@@ -154,7 +136,7 @@ export function getMillerIndicesFromCamera(cameraEye, directLatticeVectorsCartes
 
     // Now, multiply the inverse matrix by the Cartesian vector V_cart to get h, k, l
     // [h, k, l]^T = M_reciprocal_cartesian_inv * V_cart^T
-    const hkl_float = multiplyMatrices(M_reciprocal_cartesian_inv, [[V_cart[0]], [V_cart[1]], [V_cart[2]]]);
+    const hkl_float = math.multiply(M_reciprocal_cartesian_inv, [[V_cart[0]], [V_cart[1]], [V_cart[2]]]);
 
     if (!hkl_float || hkl_float.length !== 3 || hkl_float[0].length !== 1) {
         console.error("Matrix multiplication failed for hkl derivation.");
@@ -202,7 +184,7 @@ export function getMillerIndicesFromCamera(cameraEye, directLatticeVectorsCartes
 
 
 // Function to compute structure factor and plot them.
-export function performCrystallographicAnalysis(parsedData, zoneAxisStr, showMessage) {
+export function performCrystallographicAnalysis(parsedData, zoneAxisStr, showMessage, cameraEye=null) {
     const { cellParameters, chemicalComponents, atomPositions, spaceGroupName } = parsedData;
     const { a: cellLengthA, b: cellLengthB, c: cellLengthC, alpha: cellAlphaAngle, beta: cellBetaAngle, gamma: cellGammaAngle } = cellParameters;
     const { elements = [] } = chemicalComponents;
@@ -213,15 +195,15 @@ export function performCrystallographicAnalysis(parsedData, zoneAxisStr, showMes
     }
     const directLatticeVectorsCartesian = getDirectLatticeVectors(cellParameters);
     const [a_vec_cart, b_vec_cart, c_vec_cart] = directLatticeVectorsCartesian;
-
+    // console.log("Real space Lattice Vectors (a, b, c):", directLatticeVectorsCartesian);
     const reciprocalLatticeVectorsCartesian = getReciprocalLatticeVectors(directLatticeVectorsCartesian);
+    // console.log("Reciprocal Lattice Vectors (a*, b*, c*):", reciprocalLatticeVectorsCartesian);
 
     if (!reciprocalLatticeVectorsCartesian) {
         showMessage("Failed to calculate reciprocal lattice vectors. Check console for details.", "error");
         return;
     }
     const [aStar, bStar, cStar] = reciprocalLatticeVectorsCartesian;
-    // console.log("Reciprocal Lattice Vectors (a*, b*, c*):", reciprocalLatticeVectorsCartesian);
 
     // Calculate the kinematic structure factor
     const k_max = 1 // Angstrom^-1, maximum reciprocal space vector length
@@ -231,7 +213,7 @@ export function performCrystallographicAnalysis(parsedData, zoneAxisStr, showMes
 
     const listofPlanes = [];
     const structureFactors = {};
-    const structureFactorMagnitudes = [];
+    const Intensities = [];
 
     for (let h = -h_range; h <= h_range; h++) {
         for (let k = -k_range; k <= k_range; k++) {
@@ -248,8 +230,8 @@ export function performCrystallographicAnalysis(parsedData, zoneAxisStr, showMes
                 });
 
                 const magnitude = Math.sqrt(F_re ** 2 + F_im ** 2);
-                structureFactors[`${h},${k},${l}`] = magnitude; //only storing and plotting magnitude |F|; maybe store |F|^2 instead?
-                structureFactorMagnitudes.push(magnitude);
+                structureFactors[`${h},${k},${l}`] = magnitude;
+                Intensities.push(magnitude ** 2); 
             }
         }
     }
@@ -264,48 +246,46 @@ export function performCrystallographicAnalysis(parsedData, zoneAxisStr, showMes
         zoneAxisStr = "1,0,0"; // Update string if default is used
     }
 
-    // Calculate the reciprocal lattice vector G_hkl which is normal to the (hkl) plane
-    const g_hkl = [
-        zoneAxis[0] * aStar[0] + zoneAxis[1] * bStar[0] + zoneAxis[2] * cStar[0],
-        zoneAxis[0] * aStar[1] + zoneAxis[1] * bStar[1] + zoneAxis[2] * cStar[1],
-        zoneAxis[0] * aStar[2] + zoneAxis[1] * bStar[2] + zoneAxis[2] * cStar[2]
-    ];
-    const normalPlaneVector = normalizeVector(g_hkl);
-    // console.log("Normal vector to desired plane:", normalPlaneVector);
+    const normal = normalizeVector(math.multiply(directLatticeVectorsCartesian, zoneAxis));
 
-    // Create a new orthogonal basis for projection: xVector, yVector, and normalPlaneVector
-    const dummyVector = Math.abs(normalPlaneVector[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
-    let yVector = crossProduct(dummyVector, normalPlaneVector);
-    yVector = normalizeVector(yVector);
-    let xVector = crossProduct(normalPlaneVector, yVector);
-    xVector = normalizeVector(xVector);
+    const arbitraryVector = Math.abs(normal[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+    let yVec = normalizeVector(crossProduct(arbitraryVector, normal));
+    let xVec = normalizeVector(crossProduct(normal, yVec));
 
-    // Project reciprocal lattice points onto this new basis for 2D diffraction plot
-    const projectedCoords = listofPlanes.map(([h,k,l]) => {
-        const gVec = [
-            h * aStar[0] + k * bStar[0] + l * cStar[0],
-            h * aStar[1] + k * bStar[1] + l * cStar[1],
-            h * aStar[2] + k * bStar[2] + l * cStar[2]
-        ];
-        return [
-            dotProduct(gVec, xVector), // X-coordinate in the new basis
-            dotProduct(gVec, yVector), // Y-coordinate in the new basis
-            dotProduct(gVec, normalPlaneVector) // Z-coordinate (component along the normal)
-        ];
-    });
-    // console.log("Projected Reciprocal Space Coordinates:", projectedCoords);
+    const newBasisVectors = [xVec, yVec, normal];
+    const g_pts = math.multiply(listofPlanes, reciprocalLatticeVectorsCartesian);
 
-    // Prepare data for diffraction pattern visualization
+    const proj_coords = math.multiply(g_pts, math.transpose(newBasisVectors));
+    // console.log("Projected Coordinates in New Basis:", math.subtract(proj_coords,projectedCoords));
+
+    // Prepare data for diffraction pattern plotting
     let diffractionDataPoints = [];
-    projectedCoords.forEach((coords, index) => {
-        const magnitude = structureFactorMagnitudes[index];
-        // Ensure h,k,l are not all zero and have some intensity
-        if (magnitude > 0.001 || (listofPlanes[index][0] === 0 && listofPlanes[index][1] === 0 && listofPlanes[index][2] === 0 && magnitude > 0)) {
-            diffractionDataPoints.push({
+    proj_coords.forEach((coords, index) => {
+        const intensity = Intensities[index];
+        const hklIndex = listofPlanes[index];
+
+        // Handle the (0,0,0) point
+        if (hklIndex[0] === 0 && hklIndex[1] === 0 && hklIndex[2] === 0) {
+            if (intensity > 1e-5) {
+                diffractionDataPoints.push({
+                    x: coords[0],
+                    y: coords[1],  
+                    label: hklIndex.join(','),
+                    markerSize: intensity / 100
+                    // markerSize: intensity, 
+                });
+            }
+            return; // Skip the origin point for further processing
+        }
+
+
+        if (Math.abs(dotProduct(zoneAxis, hklIndex)/(getVectorMagnitude(zoneAxis)*getVectorMagnitude(hklIndex))) < 0.01 && intensity > 1e-5) {
+             diffractionDataPoints.push({
                 x: coords[0],
                 y: coords[1],
-                label: listofPlanes[index].join(','),
-                markerSize: (magnitude / (Math.max(...structureFactorMagnitudes) || 1)) * 10 + 5 // Scale marker size dynamically, min size 5
+                label: hklIndex.join(','),
+                markerSize: intensity / 100
+                // markerSize: (intensity / (Math.max(...Intensities) || 1)) //* 10 + 5 // Scale marker size dynamically, min size 5
             });
         }
     });
@@ -349,10 +329,10 @@ export function performCrystallographicAnalysis(parsedData, zoneAxisStr, showMes
                 },
                 // Initial camera eye is set to look along the normal, as before.
                 // This will be overridden by user interaction once plot loads.
-                eye: {
-                    x: normalPlaneVector[0] * 2,
-                    y: normalPlaneVector[1] * 2,
-                    z: normalPlaneVector[2] * 2
+                eye: cameraEye ||{
+                    x: normal[0],
+                    y: normal[1],
+                    z: normal[2]
                 },
                 // up: {
                 //     x: xVector[0],
@@ -407,16 +387,16 @@ export function performCrystallographicAnalysis(parsedData, zoneAxisStr, showMes
             gridThickness: 0,
             lineThickness: 1,
             tickThickness: 0,
-            minimum: -1.0, 
-            maximum: 1.0,
+            minimum: -1.25, 
+            maximum: 1.25,
             labelFormatter: function() { return ""; } 
         },
         axisY: {
             gridThickness: 0,
             lineThickness: 1,
             tickThickness: 0,
-            minimum: -1.0, 
-            maximum: 1.0,
+            minimum: -1.25, 
+            maximum: 1.25,
             labelFormatter: function() { return ""; } 
         },
         title: {

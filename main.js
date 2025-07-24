@@ -44,12 +44,12 @@ function clearSummaryDisplay() {
 }
 
 // Function to update the plots and UI based on new plane
-function updatePlotsAndUI(planeStr) {
+function updatePlotsAndUI(planeStr, cameraEye=null) {
     if (currentParsedCifData) {
         // Update the Miller Plane input field
         planeInput.value = planeStr;
         // Re-run analysis with the new plane input
-        performCrystallographicAnalysis(currentParsedCifData, planeStr, showMessage);
+        performCrystallographicAnalysis(currentParsedCifData, planeStr, showMessage, cameraEye);
         showMessage("Diffraction view updated!", "success");
     } else {
         showMessage("Please upload a CIF file first.", "error");
@@ -108,16 +108,12 @@ function handleFileSelection(event) {
     // This listener should be added only once the Plotly div is ready and plot is created.
     // Plotly.react ensures the div is ready.
     structureCanvas.on('plotly_relayout', (eventdata) => {
-        // Check if the event data contains camera information, which is typically under 'scene.camera.eye'
-        // or directly 'scene.camera' if the entire camera object is updated.
         if (eventdata['scene.camera.eye'] || (eventdata['scene.camera'] && eventdata['scene.camera'].eye)) {
             clearTimeout(debounceTimeoutForCamera);
             debounceTimeoutForCamera = setTimeout(() => {
                 const newCameraEye = eventdata['scene.camera.eye'] || eventdata['scene.camera'].eye;
 
                 if (newCameraEye && currentParsedCifData) {
-                    // Get direct and reciprocal lattice vectors from the parsed data
-                    // These are needed for the Miller index conversion
                     const directLatticeVectors = getDirectLatticeVectors(currentParsedCifData.cellParameters);
                     const reciprocalLatticeVectors = getReciprocalLatticeVectors(directLatticeVectors);
 
@@ -135,13 +131,13 @@ function handleFileSelection(event) {
                     if (millerIndices && millerIndices.length === 3) {
                         const hklString = `${millerIndices[0]},${millerIndices[1]},${millerIndices[2]}`;
                         console.log("Derived HKL from camera:", hklString);
-                        // Update UI and re-plot
-                        updatePlotsAndUI(hklString);
+                        // Pass the current camera eye to updatePlotsAndUI
+                        updatePlotsAndUI(hklString, newCameraEye); // MODIFICATION HERE
                     } else {
                         console.warn("Could not derive valid Miller indices from camera position.");
                     }
                 }
-            }, 200); // Debounce time for camera updates (200ms)
+            }, 200);
         }
     });
 
