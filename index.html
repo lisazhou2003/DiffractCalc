@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Diffraction Pattern Simulator</title>
+    <script src="https://cdn.canvasjs.com/ga/canvasjs.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-3.0.0.min.js" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/14.0.1/math.js"></script>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="index.css"/>
+  </head>
+  <body>
+
+    <h1>Diffraction Pattern Simulator</h1>
+    <p id="status">Upload a CIF file to begin.</p>
+
+    <div class="input-section">
+      <input type="file" id="cifFile" accept=".cif">
+      <div class="plane-input-group">
+        <label for="planeInput">Miller Plane (h,k,l, e.g., 0,0,1):</label>
+        <input type="text" id="planeInput" value="0,0,1">
+        <button id="updatePlotButton">Update Diffraction View</button>
+      </div>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="container">
+      <div class="box" id="structureViewer">
+        <h2>Crystal Structure</h2>
+        <div id="structureCanvas"></div>
+      </div>
+
+      <div class="box" id="diffractionPattern">
+        <h2>Diffraction Pattern</h2>
+        <div id="diffractionCanvas"></div>
+      </div>
+    </div>
+
+    <div class="cif-summary">
+        <h3>CIF Summary:</h3>
+        <p><strong>Space Group:</strong> <span id="displaySpaceGroup">N/A</span></p>
+        <p><strong>Elements:</strong> <span id="displayElements">N/A</span></p>
+        <p><strong>Lattice Parameters:</strong></p>
+        <ul>
+            <li>a = <span id="displayA">N/A</span> Å</li>
+            <li>b = <span id="displayB">N/A</span> Å</li>
+            <li>c = <span id="displayC">N/A</span> Å</li>
+            <li>&alpha; = <span id="displayAlpha">N/A</span> &deg;</li>
+            <li>&beta; = <span id="displayBeta">N/A</span> &deg;</li>
+            <li>&gamma; = <span id="displayGamma">N/A</span> &deg;</li>
+        </ul>
+    </div>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,153 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    background-color: #f4f4f4;
+    color: #333;
+  }
+
+  h1 {
+    text-align: center;
+    margin: 20px 0;
+    color: #2c3e50;
+  }
+
+  .input-section {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  input#cifFile {
+    margin: 15px auto;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .plane-input-group {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .plane-input-group label {
+    font-weight: bold;
+  }
+
+  .plane-input-group input[type="text"] {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 80px;
+    text-align: center;
+  }
+
+  .plane-input-group button {
+    padding: 8px 15px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .plane-input-group button:hover {
+    background-color: #2980b9;
+  }
+
+  p#status {
+    text-align: center;
+    color: #555;
+    font-style: italic;
+    margin-top: 10px;
+  }
+
+  div#message {
+    text-align: center;
+    margin: 10px 0;
+    font-weight: bold;
+  }
+
+
+  .cif-summary {
+    background-color: #e9f5ff;
+    border: 1px solid #cceeff;
+    border-radius: 8px;
+    padding: 15px 25px;
+    margin: 20px auto;
+    max-width: 600px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .cif-summary h3 {
+    color: #3498db;
+    margin-top: 0;
+    border-bottom: 1px solid #add8e6;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+  }
+
+  .cif-summary p, .cif-summary ul {
+    margin: 5px 0;
+    line-height: 1.5;
+  }
+
+  .cif-summary ul {
+    list-style-type: none;
+    padding-left: 0;
+  }
+
+  .cif-summary ul li {
+    margin-bottom: 3px;
+  }
+
+  .cif-summary strong {
+    color: #2c3e50;
+  }
+
+
+  .container {
+    display: flex;
+    justify-content: center; /* Center the boxes horizontally */
+    flex-wrap: wrap; /* Allows wrapping on smaller screens */
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .box {
+    flex: 1; /* Allow boxes to grow/shrink */
+    min-width: 300px;
+    max-width: 48%;
+    aspect-ratio: 1/1;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    overflow: hidden; /* Ensures content stays within bounds */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: white;
+  }
+
+  .box h2 {
+    margin: 15px 0;
+    color: #34495e;
+  }
+
+  #structureCanvas, #diffractionCanvas {
+    width: 100%;
+    flex-grow: 1;
+    min-height: 0; /* Important for flex items with height */
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .box {
+      max-width: 95%; /* Stack boxes vertically on smaller screens */
+    }
+  }
